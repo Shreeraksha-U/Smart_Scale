@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartScale — Price & Weight Proportional Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="tailwind.config.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-200 flex flex-col">
+
+    <!-- Top Navigation / Header -->
+    <header class="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
+                    <i class="ph-bold ph-scales text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight leading-none flex items-center gap-2">
+                        SmartScale
+                    </h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Price & Weight Proportional Calculator</p>
+                </div>
+            </div>
+
+            <!-- Controls: Currency & Theme -->
+            <div class="flex items-center gap-2">
+                <!-- Currency Selector -->
+                <div class="inline-flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700/70" role="group">
+                    <button onclick="setCurrency('₹')" id="curr-₹" class="curr-btn px-2.5 py-1 text-xs font-bold rounded-lg transition-all">₹</button>
+                    <button onclick="setCurrency('$')" id="curr-$" class="curr-btn px-2.5 py-1 text-xs font-bold rounded-lg transition-all">$</button>
+                    <button onclick="setCurrency('€')" id="curr-€" class="curr-btn px-2.5 py-1 text-xs font-bold rounded-lg transition-all">€</button>
+                    <button onclick="setCurrency('£')" id="curr-£" class="curr-btn px-2.5 py-1 text-xs font-bold rounded-lg transition-all">£</button>
+                </div>
+
+                <!-- Sample Demo Button -->
+                <button onclick="loadSoapExample()" title="Reset to 50g Soap Demo" class="px-3 py-1.5 text-xs font-medium rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition flex items-center gap-1.5 border border-slate-200/80 dark:border-slate-700">
+                    <i class="ph ph-magic-wand text-indigo-500"></i>
+                    <span class="hidden sm:inline">Demo</span>
+                </button>
+
+                <!-- Dark Mode Toggle -->
+                <button onclick="toggleTheme()" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700 transition" aria-label="Toggle Dark Mode">
+                    <i id="theme-icon" class="ph-bold ph-moon text-base"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+        <!-- Mode Switcher Tabs -->
+        <div class="bg-slate-200/70 dark:bg-slate-900 p-1.5 rounded-2xl grid grid-cols-2 gap-1.5 max-w-lg mx-auto border border-slate-200 dark:border-slate-800 shadow-inner">
+            <button onclick="switchMode('proportional')" id="tab-proportional" class="py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-2 bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm">
+                <i class="ph-bold ph-arrows-left-right text-base"></i>
+                <span>Proportional Calculator</span>
+            </button>
+            <button onclick="switchMode('compare')" id="tab-compare" class="py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                <i class="ph-bold ph-scales text-base"></i>
+                <span>Compare 2 Products</span>
+            </button>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- MODE 1: BIDIRECTIONAL PROPORTIONAL CALC    -->
+        <!-- ========================================== -->
+        <section id="section-proportional" class="space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+
+                <!-- LEFT CARD: Base Product 1 (Reference) -->
+                <div class="lg:col-span-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 sm:p-6 flex flex-col justify-between relative overflow-hidden">
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/70 px-2.5 py-1 rounded-lg">
+                                 1. Base Product
+                            </span>
+                            <span id="unit-type-badge" class="text-xs font-medium text-slate-400 dark:text-slate-500">Solid Weight</span>
+                        </div>
+
+                        <!-- Product Name Input -->
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Product Name (Optional)</label>
+                            <div class="relative">
+                                <i class="ph ph-package absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
+                                <input type="text" id="base-name" value="Bath Soap" placeholder="e.g., Bath Soap, Basmati Rice" 
+                                    oninput="calculateProportional('base')"
+                                    class="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                            </div>
+                        </div>
+
+                        <!-- Field 1: How much the product weighs -->
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label for="base-weight" class="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                    1. How much does it weigh?
+                                </label>
+                                <span class="text-[11px] text-slate-400">Ex: 50g</span>
+                            </div>
+                            <div class="flex rounded-xl shadow-sm border border-slate-300 dark:border-slate-700 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500 overflow-hidden bg-white dark:bg-slate-800">
+                                <input type="number" id="base-weight" value="50" min="0" step="any" placeholder="50"
+                                    oninput="calculateProportional('base')"
+                                    class="w-full px-4 py-3 text-lg font-bold bg-transparent focus:outline-none">
+                                <select id="base-unit" onchange="handleUnitChange('base')" 
+                                    class="bg-slate-100 dark:bg-slate-700/80 border-l border-slate-300 dark:border-slate-700 px-3.5 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer">
+                                    <optgroup label="Weight">
+                                        <option value="g" selected>g (Grams)</option>
+                                        <option value="kg">kg (Kilograms)</option>
+                                        <option value="mg">mg (Milligrams)</option>
+                                        <option value="oz">oz (Ounces)</option>
+                                        <option value="lb">lb (Pounds)</option>
+                                    </optgroup>
+                                    <optgroup label="Volume">
+                                        <option value="ml">ml (Milliliters)</option>
+                                        <option value="l">L (Liters)</option>
+                                    </optgroup>
+                                    <optgroup label="Count">
+                                        <option value="pcs">pcs (Pieces)</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                            <!-- Quick Base Weight Presets -->
+                            <div class="flex flex-wrap gap-1.5 mt-2">
+                                <button onclick="setBaseWeight(50, 'g')" class="text-[11px] px-2 py-0.5 rounded-md bg-slate-100 hover:bg-indigo-50 dark:bg-slate-800 dark:hover:bg-indigo-950 text-slate-600 dark:text-slate-300 font-medium transition">50g</button>
+                                <button onclick="setBaseWeight(100, 'g')" class="text-[11px] px-2 py-0.5 rounded-md bg-slate-100 hover:bg-indigo-50 dark:bg-slate-800 dark:hover:bg-indigo-950 text-slate-600 dark:text-slate-300 font-medium transition">100g</button>
+                                <button onclick="setBaseWeight(250, 'g')" class="text-[11px] px-2 py-0.5 rounded-md bg-slate-100 hover:bg-indigo-50 dark:bg-slate-800 dark:hover:bg-indigo-950 text-slate-600 dark:text-slate-300 font-medium transition">250g</button>
+                                <button onclick="setBaseWeight(500, 'g')" class="text-[11px] px-2 py-0.5 rounded-md bg-slate-100 hover:bg-indigo-50 dark:bg-slate-800 dark:hover:bg-indigo-950 text-slate-600 dark:text-slate-300 font-medium transition">500g</button>
+                                <button onclick="setBaseWeight(1, 'kg')" class="text-[11px] px-2 py-0.5 rounded-md bg-slate-100 hover:bg-indigo-50 dark:bg-slate-800 dark:hover:bg-indigo-950 text-slate-600 dark:text-slate-300 font-medium transition">1kg</button>
+                            </div>
+                        </div>
+
+                        <!-- Field 2: What's the price of this product -->
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label for="base-price" class="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                    2. What is the price?
+                                </label>
+                                <span class="text-[11px] text-slate-400">Known Cost</span>
+                            </div>
+                            <div class="relative flex items-center rounded-xl shadow-sm border border-slate-300 dark:border-slate-700 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500 bg-white dark:bg-slate-800">
+                                <span class="curr-symbol pl-4 pr-2 text-lg font-bold text-slate-400 select-none">₹</span>
+                                <input type="number" id="base-price" value="35" min="0" step="any" placeholder="35"
+                                    oninput="calculateProportional('base')"
+                                    class="w-full pr-4 py-3 text-lg font-bold bg-transparent focus:outline-none">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Base Unit Rate Breakdown Box -->
+                    <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800/80">
+                        <div class="text-xs font-medium text-slate-400 mb-2 flex items-center justify-between">
+                            <span>Base Unit Rate Breakdown</span>
+                            <i class="ph ph-info text-slate-400"></i>
+                        </div>
+                        <div id="base-rate-pills" class="grid grid-cols-3 gap-2 text-center">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MIDDLE CONNECTOR (Desktop Icon) -->
+                <div class="hidden lg:flex lg:col-span-1 flex-col items-center justify-center">
+                    <div class="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shadow-sm border border-indigo-200 dark:border-indigo-800">
+                        <i class="ph-bold ph-arrows-left-right text-lg"></i>
+                    </div>
+                </div>
+
+                <!-- RIGHT CARD: Bidirectional Target Calculator -->
+                <div class="lg:col-span-6 bg-white dark:bg-slate-900 rounded-2xl border-2 border-indigo-500/30 dark:border-indigo-500/30 shadow-md p-5 sm:p-6 flex flex-col justify-between relative overflow-hidden">
+
+                    <div class="space-y-5">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <span class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/70 px-2.5 py-1 rounded-lg">
+                                 2. Interactive Target Calculator
+                            </span>
+                            <span id="calc-direction-badge" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                                Weight ➔ Price
+                            </span>
+                        </div>
+
+                        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                            Type <strong>either</strong> a target weight to see how much it costs, <strong>or</strong> type a budget price to immediately see how much weight you get!
+                        </p>
+
+                        <!-- Target Weight Input (Triggers Price Calculation) -->
+                        <div id="target-weight-box" class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 transition-all">
+                            <div class="flex justify-between items-center mb-1.5">
+                                <label for="target-weight" class="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                                    Target Weight (How much do you want?)
+                                </label>
+                                <span id="weight-status-tag" class="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400">Editing Weight</span>
+                            </div>
+
+                            <div class="flex rounded-xl shadow-sm border border-slate-300 dark:border-slate-600 focus-within:ring-2 focus-within:ring-indigo-500 bg-white dark:bg-slate-900 overflow-hidden">
+                                <input type="number" id="target-weight" value="125" min="0" step="any" placeholder="Enter weight..."
+                                    oninput="calculateProportional('weight')"
+                                    class="w-full px-4 py-3 text-xl font-extrabold text-slate-900 dark:text-white bg-transparent focus:outline-none">
+                                <select id="target-unit" onchange="handleUnitChange('target')"
+                                    class="bg-slate-100 dark:bg-slate-800 border-l border-slate-300 dark:border-slate-600 px-3.5 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer">
+                                    <optgroup label="Weight">
+                                        <option value="g" selected>g (Grams)</option>
+                                        <option value="kg">kg (Kilograms)</option>
+                                        <option value="mg">mg (Milligrams)</option>
+                                        <option value="oz">oz (Ounces)</option>
+                                        <option value="lb">lb (Pounds)</option>
+                                    </optgroup>
+                                    <optgroup label="Volume">
+                                        <option value="ml">ml (Milliliters)</option>
+                                        <option value="l">L (Liters)</option>
+                                    </optgroup>
+                                    <optgroup label="Count">
+                                        <option value="pcs">pcs (Pieces)</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+
+                            <!-- Quick Target Weight Chips -->
+                            <div class="flex flex-wrap items-center gap-1.5 mt-2.5">
+                                <span class="text-[11px] text-slate-400 mr-1">Try weight:</span>
+                                <button onclick="setTargetPresetWeight(50, 'g')" class="text-xs px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950 border border-slate-200 dark:border-slate-700 font-semibold transition shadow-2xs">50g</button>
+                                <button onclick="setTargetPresetWeight(100, 'g')" class="text-xs px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950 border border-slate-200 dark:border-slate-700 font-semibold transition shadow-2xs">100g</button>
+                                <button onclick="setTargetPresetWeight(125, 'g')" class="text-xs px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950 border border-slate-200 dark:border-slate-700 font-semibold transition shadow-2xs">125g</button>
+                                <button onclick="setTargetPresetWeight(500, 'g')" class="text-xs px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950 border border-slate-200 dark:border-slate-700 font-semibold transition shadow-2xs">500g</button>
+                                <button onclick="setTargetPresetWeight(1, 'kg')" class="text-xs px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950 border border-slate-200 dark:border-slate-700 font-semibold transition shadow-2xs">1kg</button>
+                                <button onclick="setTargetPresetWeight(1, 'lb')" class="text-xs px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950 border border-slate-200 dark:border-slate-700 font-semibold transition shadow-2xs">1lb</button>
+                            </div>
+                        </div>
+
+                        <!-- Target Price Input (Triggers Weight Calculation) -->
+                        <div id="target-price-box" class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 transition-all">
+                            <div class="flex justify-between items-center mb-1.5">
+                                <label for="target-price" class="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                                    Target Price / Budget (How much will it cost?)
+                                </label>
+                                <span id="price-status-tag" class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">Auto-Calculated</span>
+                            </div>
+
+                            <div class="relative flex items-center rounded-xl shadow-sm border border-slate-300 dark:border-slate-600 focus-within:ring-2 focus-within:ring-emerald-500 bg-white dark:bg-slate-900">
+                                <span class="curr-symbol pl-4 pr-2 text-xl font-extrabold text-slate-400 select-none">₹</span>
+                                <input type="number" id="target-price" value="87.5" min="0" step="any" placeholder="Enter price..."
+                                    oninput="calculateProportional('price')"
+                                    class="w-full pr-4 py-3 text-xl font-extrabold text-slate-900 dark:text-white bg-transparent focus:outline-none">
+                            </div>
+
+                            <!-- Quick Budget Chips -->
+                            <div class="flex flex-wrap items-center gap-1.5 mt-2.5">
+                                <span class="text-[11px] text-slate-400 mr-1">Try budget:</span>
+                                <button onclick="setTargetPresetPrice(10)" class="text-xs px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-950 border border-slate-200 dark:border-slate-700 font-semibold transition"><span class="curr-symbol">₹</span>10</button>
+                                <button onclick="setTargetPresetPrice(20)" class="text-xs px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-950 border border-slate-200 dark:border-slate-700 font-semibold transition"><span class="curr-symbol">₹</span>20</button>
+                                <button onclick="setTargetPresetPrice(50)" class="text-xs px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-950 border border-slate-200 dark:border-slate-700 font-semibold transition"><span class="curr-symbol">₹</span>50</button>
+                                <button onclick="setTargetPresetPrice(100)" class="text-xs px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-950 border border-slate-200 dark:border-slate-700 font-semibold transition"><span class="curr-symbol">₹</span>100</button>
+                                <button onclick="setTargetPresetPrice(500)" class="text-xs px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-950 border border-slate-200 dark:border-slate-700 font-semibold transition"><span class="curr-symbol">₹</span>500</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Natural Language Summary Banner -->
+                    <div class="mt-5 p-4 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div class="space-y-1">
+                            <div class="text-[11px] uppercase tracking-wider font-semibold text-indigo-200 flex items-center gap-1">
+                                 Instant Calculation Result
+                            </div>
+                            <p id="proportional-summary" class="text-sm sm:text-base font-medium leading-snug">
+                                <!-- Filled dynamically -->
+                            </p>
+                        </div>
+                        <button onclick="saveCurrentCalculation('proportional')" class="shrink-0 w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 active:scale-95 text-white text-xs font-bold backdrop-blur-xs transition flex items-center justify-center gap-1.5 border border-white/20">
+                            <i class="ph-bold ph-bookmark-simple"></i>
+                            Save to List
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Reference Multi-Unit Table for Base Product -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                            <i class="ph-bold ph-table text-indigo-500"></i>
+                            Quick Reference Cheat-Sheet
+                        </h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Automatic price table for common weights at this exact rate</p>
+                    </div>
+                    <span id="cheat-sheet-product-title" class="text-xs font-semibold px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">Bath Soap</span>
+                </div>
+                <div id="quick-reference-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- MODE 2: HEAD-TO-HEAD PRODUCT COMPARISON    -->
+        <!-- ========================================== -->
+        <section id="section-compare" class="hidden space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                <!-- Product A Card -->
+                <div id="card-prod-a" class="bg-white dark:bg-slate-900 rounded-2xl border-2 border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-xs transition-all relative overflow-hidden">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 px-3 py-1 rounded-lg">
+                            Product A
+                        </span>
+                        <span id="badge-winner-a" class="hidden text-xs font-bold px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 flex items-center gap-1">
+                            <i class="ph-fill ph-trophy"></i> Better Value
+                        </span>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Product A Name</label>
+                            <input type="text" id="comp-a-name" value="Soap Pack A (Small)" oninput="calculateComparison()"
+                                class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Weight / Quantity</label>
+                                <div class="flex rounded-xl border border-slate-300 dark:border-slate-700 overflow-hidden bg-white dark:bg-slate-800 focus-within:ring-2 focus-within:ring-indigo-500">
+                                    <input type="number" id="comp-a-weight" value="50" min="0" step="any" oninput="calculateComparison()"
+                                        class="w-full px-3 py-2.5 text-base font-bold bg-transparent focus:outline-none">
+                                    <select id="comp-a-unit" onchange="handleCompareUnitChange('a')"
+                                        class="bg-slate-100 dark:bg-slate-700 border-l border-slate-300 dark:border-slate-600 px-2.5 text-xs font-bold focus:outline-none">
+                                        <option value="g" selected>g</option>
+                                        <option value="kg">kg</option>
+                                        <option value="mg">mg</option>
+                                        <option value="oz">oz</option>
+                                        <option value="lb">lb</option>
+                                        <option value="ml">ml</option>
+                                        <option value="l">L</option>
+                                        <option value="pcs">pcs</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Price</label>
+                                <div class="flex items-center rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus-within:ring-2 focus-within:ring-indigo-500">
+                                    <span class="curr-symbol pl-3 pr-1.5 text-base font-bold text-slate-400">₹</span>
+                                    <input type="number" id="comp-a-price" value="35" min="0" step="any" oninput="calculateComparison()"
+                                        class="w-full pr-3 py-2.5 text-base font-bold bg-transparent focus:outline-none">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="comp-a-metrics" class="pt-3 border-t border-slate-100 dark:border-slate-800 text-xs space-y-1.5 text-slate-600 dark:text-slate-400">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Product B Card -->
+                <div id="card-prod-b" class="bg-white dark:bg-slate-900 rounded-2xl border-2 border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-xs transition-all relative overflow-hidden">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950 px-3 py-1 rounded-lg">
+                            Product B
+                        </span>
+                        <span id="badge-winner-b" class="hidden text-xs font-bold px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 flex items-center gap-1">
+                            <i class="ph-fill ph-trophy"></i> Better Value
+                        </span>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Product B Name</label>
+                            <input type="text" id="comp-b-name" value="Soap Pack B (Value Bar)" oninput="calculateComparison()"
+                                class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Weight / Quantity</label>
+                                <div class="flex rounded-xl border border-slate-300 dark:border-slate-700 overflow-hidden bg-white dark:bg-slate-800 focus-within:ring-2 focus-within:ring-purple-500">
+                                    <input type="number" id="comp-b-weight" value="125" min="0" step="any" oninput="calculateComparison()"
+                                        class="w-full px-3 py-2.5 text-base font-bold bg-transparent focus:outline-none">
+                                    <select id="comp-b-unit" onchange="handleCompareUnitChange('b')"
+                                        class="bg-slate-100 dark:bg-slate-700 border-l border-slate-300 dark:border-slate-600 px-2.5 text-xs font-bold focus:outline-none">
+                                        <option value="g" selected>g</option>
+                                        <option value="kg">kg</option>
+                                        <option value="mg">mg</option>
+                                        <option value="oz">oz</option>
+                                        <option value="lb">lb</option>
+                                        <option value="ml">ml</option>
+                                        <option value="l">L</option>
+                                        <option value="pcs">pcs</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Price</label>
+                                <div class="flex items-center rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus-within:ring-2 focus-within:ring-purple-500">
+                                    <span class="curr-symbol pl-3 pr-1.5 text-base font-bold text-slate-400">₹</span>
+                                    <input type="number" id="comp-b-price" value="75" min="0" step="any" oninput="calculateComparison()"
+                                        class="w-full pr-3 py-2.5 text-base font-bold bg-transparent focus:outline-none">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="comp-b-metrics" class="pt-3 border-t border-slate-100 dark:border-slate-800 text-xs space-y-1.5 text-slate-600 dark:text-slate-400">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Head-to-Head Verdict Banner -->
+            <div id="comparison-verdict-box" class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div class="space-y-1.5">
+                    <div class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                        <i class="ph-fill ph-seal-check text-base"></i> Value Verdict
+                    </div>
+                    <h3 id="verdict-headline" class="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white">
+                        <!-- Populated by JS -->
+                    </h3>
+                    <p id="verdict-subtext" class="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+                        <!-- Populated by JS -->
+                    </p>
+                </div>
+                <button onclick="saveCurrentCalculation('compare')" class="shrink-0 w-full sm:w-auto px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
+                    <i class="ph-bold ph-bookmark-simple"></i>
+                    Save Comparison
+                </button>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- SAVED HISTORY / SHOPPING LIST              -->
+        <!-- ========================================== -->
+        <section class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-xs">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <i class="ph-bold ph-clock-counter-clockwise text-indigo-500 text-lg"></i>
+                    <h2 class="text-sm sm:text-base font-bold">Saved Calculations & Shopping Log</h2>
+                    <span id="saved-count" class="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">0</span>
+                </div>
+                <button onclick="clearHistory()" id="clear-history-btn" class="hidden text-xs font-semibold text-rose-500 hover:text-rose-600 flex items-center gap-1 transition">
+                    <i class="ph ph-trash"></i> Clear All
+                </button>
+            </div>
+
+            <div id="saved-list-empty" class="text-center py-8 text-slate-400 dark:text-slate-500 text-xs sm:text-sm">
+                <i class="ph ph-bookmarks text-3xl mb-1.5 block mx-auto opacity-60"></i>
+                No saved calculations yet. Click <strong>"Save to List"</strong> to keep track of items while shopping.
+            </div>
+
+            <div id="saved-list-container" class="space-y-2.5 hidden">
+                <!-- Populated dynamically -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 pointer-events-none transition-all duration-300 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-2.5 rounded-xl shadow-lg text-xs font-semibold flex items-center gap-2">
+        <i class="ph-fill ph-check-circle text-emerald-400 dark:text-emerald-600 text-base"></i>
+        <span id="toast-msg">Saved to list!</span>
+    </div>
+
+    <!-- Footer -->
+    <footer class="py-5 text-center text-xs text-slate-400 dark:text-slate-600 border-t border-slate-200/60 dark:border-slate-900 mt-auto">
+        SmartScale Price & Weight Calculator • Instant Bidirectional Unit Conversions (g, kg, mg, oz, lb, ml, L, pcs)
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
