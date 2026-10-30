@@ -1,0 +1,20 @@
+body {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* Hide number input arrows for cleaner look */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+        .pulse-highlight {
+            animation: pulseBg 0.6s ease-out;
+        }
+        @keyframes pulseBg {
+            0% { background-color: rgba(99, 102, 241, 0.25); }
+            100% { background-color: transparent; }
+        }
